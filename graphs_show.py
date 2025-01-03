@@ -1,4 +1,5 @@
   # Attempt for simultaneous graph showcase
+import re
 import requests
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -23,17 +24,21 @@ def scrape_product_images_and_ids(driver, page_url):
     driver.get(page_url)
     
     # Wait for the products to be rendered on the page (i.e., wait for the images to load)
-    WebDriverWait(driver, 20).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@class='lazy-image__wrapper']//img")))
+    WebDriverWait(driver, 20).until(EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@class,'search-result__product')]//a")))
     
     # Once the elements are loaded, we can scrape the product data
-    product_elements = driver.find_elements(By.XPATH, "//div[@class='lazy-image__wrapper']//img")
+    product_elements = driver.find_elements(By.XPATH, "//div[contains(@class,'search-result__product')]//a")
     
     products = []
     for product in product_elements:
-        src = product.get_attribute("src")
-        if "/product/" in src:
-            product_id = src.split("/product/")[1].split("_")[0]
+        src = product.get_attribute("href")
+        pattern = r'/product/(\d{6})'
+        match = re.search(pattern, src)
+        if match:
+            product_id = match.group(1)  # Extract the 6-digit product ID
             products.append(product_id)
+        else:
+            print(f'no product code found in element text: {src}')
 
     return products
 
@@ -139,3 +144,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
